@@ -396,26 +396,45 @@
 
 
 	<script type="text/javascript">
-    ;(function($) {
-      var app = $.sammy(function() {
-		this.get('#/', function(){
-			$('#page-wrapper').load('main.html');
+	;(function($) {
+		/*  
+		*  javascript复杂对象转url参数字符串  
+		*/   
+		var parseParam=function(param, key){   
+			var paramStr="";   
+			if(param instanceof String||param instanceof Number||param instanceof Boolean){   
+				paramStr+="&"+key+"="+encodeURIComponent(param);   
+			}else{   
+				$.each(param,function(i){   
+					var k=key==null?i:key+(param instanceof Array?"["+i+"]":"."+i);   
+					paramStr+='&'+parseParam(this, k);   
+				});   
+			}   
+			return paramStr.substr(1);   
+		}; 
+		var loadURL = function(uri){
+			$('#page-wrapper').load(uri);
+		};
+		var app = $.sammy(function() {
+			this.get('#/', function(){
+				loadURL('main.html');
+			});
+			this.get('#/(.*)', function() {
+				var splat = this.params['splat'];
+				var request_uri = parseParam(this.params);
+				request_uri = request_uri.substring(0, request_uri.indexOf('&splat'));
+				if(request_uri){
+					var request_url = '' + splat + '.html' + '&' + request_uri;
+				}else{
+					var request_url = '' + splat + '.html';
+				}
+				loadURL(request_url);
+			});
 		});
-
-        this.get('#/:page', function() {
-          //$('#main').text('Hello World');
-		  $('#page-wrapper').load(this.params['page'] + '.html');
-			if(this.params['page'] == 'table'){
-
-			}
-        });
-
-      });
-
-      $(function() {
-        app.run()
-      });
-    })(jQuery);
+		$(function() {
+			app.run('#/');
+		});	
+	})(jQuery);	
 	</script>
     <!-- Custom Theme JavaScript -->
     <script src="../dist/js/sb-admin-2.js"></script>
